@@ -159,7 +159,25 @@
     width: 100%;
     border-radius: 14px;
     background: #000;
+    display: block;
   }
+  .download-btn {
+    display: block;
+    margin-top: 10px;
+    width: 100%;
+    padding: 14px;
+    background: #2a2a2e;
+    color: #eaeaea;
+    border-radius: 12px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .download-btn:active { background: #3a3a3e; }
+  .download-btn:hover { background: #3a3a3e; }
   .spinner {
     display: inline-block;
     width: 14px; height: 14px;
@@ -259,7 +277,6 @@
     min-height: 18px;
   }
 </style>
-<!-- Подключаем Puter.js -->
 <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
@@ -320,6 +337,9 @@
     <div id="status"></div>
     <div id="result">
       <video id="video" controls autoplay loop muted playsinline></video>
+      <a id="downloadBtn" class="download-btn" download="my-ai-video.mp4">
+        ⬇️ Скачать видео
+      </a>
     </div>
   </div>
 
@@ -349,8 +369,8 @@
 
 <script>
   // ==== НАСТРОЙКИ ====
-  const MODEL_NAME = "google/veo-3.1-fast-generate-preview"; // быстрая и бесплатная для юзера
-  const VIDEO_SECONDS = 4; // 4, 6 или 8
+  const MODEL_NAME = "google/veo-3.1-fast-generate-preview";
+  const VIDEO_SECONDS = 4;
   // ===================
 
   const authScreen = document.getElementById("authScreen");
@@ -367,6 +387,7 @@
   const statusEl = document.getElementById("status");
   const resultEl = document.getElementById("result");
   const videoEl = document.getElementById("video");
+  const downloadBtn = document.getElementById("downloadBtn");
   const gallery = document.getElementById("gallery");
   const emptyState = document.getElementById("emptyState");
   const progress = document.getElementById("progress");
@@ -517,37 +538,39 @@
 
     generateBtn.disabled = true;
     resultEl.style.display = "none";
+    downloadBtn.style.display = "none";
     progress.classList.add("active");
 
     try {
       statusEl.innerHTML = '<span class="spinner"></span>Генерирую видео... обычно 1–3 минуты';
 
-      // Опции для Puter.js
       const options = {
         model: MODEL_NAME,
         seconds: VIDEO_SECONDS,
-        test_mode: false // false = реальная генерация
+        test_mode: false // поставь true для быстрой проверки без расхода кредитов
       };
 
-      // Если режим "Фото → Видео", передаём картинку как первый кадр
       if (currentMode === "image" && currentPhotoBase64) {
         options.input_reference = currentPhotoBase64;
       }
 
-      // Вызов Puter.js
       const videoElement = await puter.ai.txt2vid(prompt, options);
-
-      // videoElement — это HTMLVideoElement с готовым src
       const videoUrl = videoElement.src;
 
       videoEl.src = videoUrl;
       resultEl.style.display = "block";
-      statusEl.textContent = "✅ Готово! Сохранено в «Мои видео»";
+
+      // Определяем расширение
+      const ext = videoUrl.includes(".webm") ? "webm" : "mp4";
+      downloadBtn.href = videoUrl;
+      downloadBtn.setAttribute("download", `my-ai-${Date.now()}.${ext}`);
+      downloadBtn.style.display = "block";
+
+      statusEl.textContent = "✅ Готово! Можно скачать видео";
       saveVideo(videoUrl, prompt || "[из фото]");
 
     } catch (e) {
       console.error("Generation error:", e);
-      // Если ошибка из-за лимита или отсутствия аккаунта — объясняем юзеру
       const msg = e.message || "Ошибка генерации";
       if (msg.includes("credit") || msg.includes("balance") || msg.includes("sign")) {
         statusEl.textContent = "❌ Нужно войти в Puter или пополнить баланс. Генерация бесплатна, но требует аккаунт.";
