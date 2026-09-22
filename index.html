@@ -550,15 +550,16 @@
 
       const payload = {
         model: MODEL_NAME,
-        prompt: prompt,
+        prompt: prompt || "animate this image",
         seconds: "5",
         size: "720P",
         aspect_ratio: "16:9"
       };
 
       if (photoBase64) {
-        payload.mode = "image";
-        payload.image = photoBase64;
+        // ✅ ИСПРАВЛЕНО: правильный режим для Agnes Video 2.5 Flash
+        payload.mode = "reference";
+        payload.images = [photoBase64]; // Agnes ожидает URL или Base64
       } else {
         payload.mode = "text";
       }
@@ -621,7 +622,7 @@
         const st = pollData.status;
 
         if (st === "completed") {
-          return pollData.video_url || pollData.url;
+          return pollData.video_url || pollData.url || pollData.metadata?.url;
         }
         if (st === "failed") {
           throw new Error("Генерация не удалась");
@@ -657,7 +658,7 @@
     progress.classList.add("active");
 
     try {
-      const createData = await createTask(prompt || "animate this image", currentPhotoBase64);
+      const createData = await createTask(prompt, currentPhotoBase64);
       const videoId = createData.video_id;
       if (!videoId) throw new Error("Не получил video_id");
 
